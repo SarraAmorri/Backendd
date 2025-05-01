@@ -1,16 +1,24 @@
-const mongoose = require('mongoose')
+const mongoose = require('mongoose');
 
-const Reservationticket = mongoose.model('Reservationticket ', {
-    busid: {
-        type: String
+const ReservationTicketSchema = new mongoose.Schema(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
     },
-
-    userid: {
-        type: String
+    numberOfPlaces: {
+      type: Number,
+      required: true,
+      min: [1, 'Le nombre de places doit être supérieur à 0'],
+      max: [70, 'Le nombre de places ne peut pas dépasser 70'],
     },
-    nbrtik: {
-        type: Number,
+    busId:{
+      type:String,
+      required: true,
     }
-})
+  },
+  { timestamps: true }
+);
 
-module.express = Reservationticket;
+module.exports = mongoose.model('ReservationTicket', ReservationTicketSchema);

@@ -1,90 +1,93 @@
+// backend/routes/interurbain.js
 const express = require('express');
-
 const router = express.Router();
+const Interurbain = require('../models/interurbain');
+const { protect, isAdmin } = require('../middleware/auth');
 
-const Interurbainser = require('../models/interurbainse');
+router.post('/ajout', protect, isAdmin, async (req, res) => {
+  try {
+    const { Depart, Arrivee, Horaires, Prix, active } = req.body;
 
-//@admin
-router.post('/ajout', (req, res) => {
-    let data = req.body;
-    let interurbain = new Interurbain(data);
-    interurbain.save()
-        .then(
-            (saved) => {
-                res.status(200).send(saved);
-            }
-        )
-        .catch(
-            err => {
-                res.status(400).send(err)
-            }
-        )
-})
-
-//@admin //@user
-router.get('/all', (req, res) => {
-    Interurbain.find({})
-     .then(
-        (interurbain)=>{
-            res.status(200).send(interurbain);
-        }
-     )
-     .catch(
-        err => {
-            res.status(400).send(err)
-        } 
-     )
-})
-
-//@user @admin
-router.get('/getbyid/:id', (req, res) => {
-     let id = req.params.id
-     Interurbain.findOne({_id: id})
-     .then(
-        (interurbain)=>{
-            res.status(200).send(interurbain);
-        }
-     )
-     .catch(
-        err => {
-            res.status(400).send(err)
-        } 
-     )
-})
-
-//@admin
-router.delete('/supprimer/:id',(req,res)=>{
-   let id = req.params.id
-   Interurbain.findByIndDelete({_id: id})
-     .then(
-        (interurbain)=>{
-            res.status(200).send(interurbain);
-        }
-     )
-     .catch(
-        (err) => {
-            res.status(400).send(err);
-        } 
-    )
-})
-
-//@admin
-router.put('/update/:id',(req,res)=>{
-   let id = req.params.id
-   let sata = req.body;
-   datatags = data.tags.split(',');
-
-  Interurbain.findByIndUpdate({ _id: id } , data )
-  .then(
-    (interurbain)=>{
-        res.status(200).send(interurbain);
+    if (!Depart || !Arrivee || !Horaires || !Prix) {
+      return res.status(400).json({ error: 'Tous les champs sont requis.' });
     }
-  )
-  .catch(
-    (err) => {
-        res.status(400).send(err);
-    } 
-)
- })
 
- module.exports = router;
+    if (typeof Prix !== 'number' || Prix <= 0) {
+      return res.status(400).json({ error: 'Le prix doit être un nombre positif.' });
+    }
+
+    const interurbain = new Interurbain({
+      Depart,
+      Arrivee,
+      Horaires,
+      Prix,
+      active: active === true || active === 'oui',
+    });
+    const saved = await interurbain.save();
+    res.status(201).json(saved);
+  } catch (err) {
+    res.status(400).json({ error: err.message || 'Erreur lors de l\'ajout de la ligne.' });
+  }
+});
+
+router.get('/all', async (req, res) => {
+  try {
+    const interurbain = await Interurbain.find({});
+    res.status(200).json(interurbain);
+  } catch (err) {
+    res.status(400).json({ error: err.message || 'Erreur lors de la récupération des lignes.' });
+  }
+});
+
+router.get('/getbyid/:id', async (req, res) => {
+  try {
+    const interurbain = await Interurbain.findById(req.params.id);
+    if (!interurbain) {
+      return res.status(404).json({ error: 'Ligne non trouvée.' });
+    }
+    res.status(200).json(interurbain);
+  } catch (err) {
+    res.status(400).json({ error: err.message || 'Erreur lors de la récupération de la ligne.' });
+  }
+});
+
+router.delete('/supprimer/:id', protect, isAdmin, async (req, res) => {
+  try {
+    const interurbain = await Interurbain.findByIdAndDelete(req.params.id);
+    if (!interurbain) {
+      return res.status(404).json({ error: 'Ligne non trouvée.' });
+    }
+    res.status(200).json({ message: 'Ligne supprimée.', interurbain });
+  } catch (err) {
+    res.status(400).json({ error: err.message || 'Erreur lors de la suppression de la ligne.' });
+  }
+});
+
+router.put('/update/:id', protect, isAdmin, async (req, res) => {
+  try {
+    const { Depart, Arrivee, Horaires, Prix, active } = req.body;
+
+    if (!Depart || !Arrivee || !Horaires || !Prix) {
+      return res.status(400).json({ error: 'Tous les champs sont requis.' });
+    }
+
+    if (typeof Prix !== 'number' || Prix <= 0) {
+      return res.status(400).json({ error: 'Le prix doit être un nombre positif.' });
+    }
+
+    const interurbain = await Interurbain.findByIdAndUpdate(
+      req.params.id,
+      { Depart, Arrivee, Horaires, Prix, active: active === true || active === 'oui' },
+      { new: true }
+    );
+
+    if (!interurbain) {
+      return res.status(404).json({ error: 'Ligne non trouvée.' });
+    }
+    res.status(200).json(interurbain);
+  } catch (err) {
+    res.status(400).json({ error: err.message || 'Erreur lors de la modification de la ligne.' });
+  }
+});
+
+module.exports = router;

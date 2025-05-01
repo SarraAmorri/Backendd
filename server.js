@@ -1,22 +1,27 @@
 const express = require('express');
-const userApi = require('./routes/user');
-const urbainApi = require('./routes/urbain');
-const interurbainApi = require('./routes/interurbain');
-const reservationticketApi = require('./routes/reservationticket');
-const locationbusApi = require('./routes/locationbus');
-require('./config/connect');
+const cors = require('cors');
+const connectDB = require('./config/connect'); // Adjust the path if needed
+
+// Load environment variables
+require('dotenv').config();
+
+// Connect to MongoDB
+connectDB();
 
 const app = express();
+
+// Middleware
+app.use(cors({ origin: 'http://localhost:3000' }));
 app.use(express.json());
 
-app.use('/user', userApi);
-app.urbain('/urbain', userApi);
-app.interurbain('/interurbain', userApi);
-app.reservationticket('/reservationticket', userApi);
-app.locationbus('/locationbus', userApi);
+// Routes 
+const userRoutes = require('./routes/user');
+const resrevationticketRoutes = require('./routes/reservationticket');
+app.use('/api/users', userRoutes);
+app.use('/api/reservationticket', resrevationticketRoutes);
 
-
-
-app.listen(3000,()=>{
-    console.log('server work');
-})
+// Start server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Serveur démarré sur http://localhost:${PORT}`);
+});
